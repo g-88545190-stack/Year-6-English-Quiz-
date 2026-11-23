@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academy Stars Year 6 英文全能闯关大冒险</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Fredoka (fun game headers), Inter (clean English), Noto Sans SC (clean Simplified Chinese) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome for crisp game icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Canvas Confetti for celebratory animations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 50%, #F0FDF4 100%);
+            min-height: 100vh;
+            color: #1E293B;
+        }
+        .font-game {
+            font-family: 'Fredoka', 'Noto Sans SC', sans-serif;
+        }
+        /* Custom 3D Arcade Button Styling */
+        .btn-3d {
+            transition: all 0.12s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.18);
+        }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.18);
+        }
+        .btn-3d:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        /* Highlighted Vocab inside Reading Passages */
+        .vocab-highlight {
+            background-color: #FEF08A;
+            color: #854D0E;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 6px;
+            border-bottom: 2px solid #EAB308;
+            cursor: help;
+            position: relative;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+        .vocab-highlight:hover {
+            background-color: #FDE047;
+        }
+        /* Smooth fade-in animation */
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.95) translateY(8px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .animate-pop {
+            animation: popIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* Shake animation for wrong answers */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.35s ease-in-out;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-indigo-200 selection:text-indigo-900 pb-12">
+
+    <!-- Top Navigation & HUD Bar -->
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b-2 border-indigo-100 shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand / Title -->
+            <div class="flex items-center gap-2.5 cursor-pointer" onclick="goHome()">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-md">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div>
+                    <h1 class="font-game text-lg sm:text-xl font-bold text-indigo-950 leading-tight">Academy Stars Y6</h1>
+                    <p class="text-xs text-slate-500 font-medium">六年级英文全能复习大冒险</p>
+                </div>
+            </div>
+
+            <!-- Stage Navigation Pills (Quick Jump / Progress Map) -->
+            <nav class="flex items-center gap-1.5 sm:gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+                <button id="nav-stage-1" onclick="jumpToStage(1)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm">
+                    <span>1️⃣ 生字 (30)</span>
+                </button>
+                <button id="nav-stage-2" onclick="jumpToStage(2)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:bg-white">
+                    <span>2️⃣ 语法 (30)</span>
+                </button>
+                <button id="nav-stage-3" onclick="jumpToStage(3)" class="px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:bg-white">
+                    <span>3️⃣ 理解文 (10)</span>
+                </button>
+            </nav>
+
+            <!-- Score / XP & Audio Controls -->
+            <div class="flex items-center gap-2.5">
+                <div class="bg-amber-50 border-2 border-amber-200 px-3 py-1.5 rounded-2xl flex items-center gap-2 shadow-inner">
+                    <i class="fa-solid fa-trophy text-amber-500 text-base"></i>
+                    <span class="font-game font-bold text-amber-900 text-sm sm:text-base"><span id="hud-score">0</span> XP</span>
+                </div>
+                <button id="btn-sound-toggle" onclick="toggleSound()" title="开关音效 / Toggle Sound" class="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 transition">
+                    <i id="sound-icon" class="fa-solid fa-volume-high text-indigo-600"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Container -->
+    <main id="app-container" class="max-w-5xl mx-auto px-4 pt-6">
+        <!-- Dynamic Views Rendered Here -->
+    </main>
+
+    <!-- Custom Toast / Message Modal (Replaces alert) -->
+    <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 animate-pop">
+        <i id="toast-icon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
+        <p id="toast-msg" class="text-sm font-medium"></p>
+    </div>
+
+    <script>
+        /* ============================================================================
+           1. CURRICULUM DATA: ACADEMY STARS YEAR 6 (MALAYSIA KSSR SYLLABUS)
+           ============================================================================ */
+
+        // 30 Essential Vocabulary Words organized into 6 Batches of 5 Words
+        const VOCAB_DATA = [
+            // Batch 1: Unit 1 (It's an emergency!)
+            { id: 1, word: "emergency", enDef: "A sudden, dangerous situation that needs immediate help or action.", zh: "紧急情况 / 突发事件", unit: "Unit 1" },
+            { id: 2, word: "ambulance", enDef: "A special vehicle with sirens that takes sick or injured people to the hospital.", zh: "救护车", unit: "Unit 1" },
+            { id: 3, word: "power cut", enDef: "A period of time when the electricity supply stops working in an area.", zh: "停电", unit: "Unit 1" },
+            { id: 4, word: "electricity", enDef: "A form of energy used to power lights, computers, and home machines.", zh: "电 / 电力", unit: "Unit 1" },
+            { id: 5, word: "whisper", enDef: "To speak very quietly using your breath so other people cannot hear.", zh: "低声说 / 耳语", unit: "Unit 1" },
+
+            // Batch 2: Unit 2 & Unit 3 (Life in the past & Adventure time)
+            { id: 6, word: "archaeologist", enDef: "A scientist who studies ancient history by digging up old objects and buildings.", zh: "考古学家", unit: "Unit 2" },
+            { id: 7, word: "ancient", enDef: "Belonging to a very long time ago in history.", zh: "古老的 / 古代的", unit: "Unit 2" },
+            { id: 8, word: "rucksack", enDef: "A large bag with straps carried on your back when hiking or travelling.", zh: "双肩背包 / 登山包", unit: "Unit 3" },
+            { id: 9, word: "compass", enDef: "An instrument with a magnetic needle that always points north to show direction.", zh: "指南针 / 罗盘", unit: "Unit 3" },
+            { id: 10, word: "equipment", enDef: "The special tools, clothing, or machines needed for a particular activity.", zh: "装备 / 设备", unit: "Unit 3" },
+
+            // Batch 3: Unit 3 & Unit 4 (Survival & Cool jobs)
+            { id: 11, word: "survival", enDef: "The state of continuing to live or exist, especially in dangerous conditions.", zh: "生存 / 幸存", unit: "Unit 3" },
+            { id: 12, word: "journalist", enDef: "A person whose job is to collect and write news stories for newspapers, TV, or online.", zh: "新闻记者", unit: "Unit 4" },
+            { id: 13, word: "documentary", enDef: "A film or television programme that gives real facts about a subject or event.", zh: "纪录片", unit: "Unit 4" },
+            { id: 14, word: "volunteer", enDef: "A person who willingly offers to do helpful work without being paid.", zh: "志愿者 / 义工", unit: "Unit 4" },
+            { id: 15, word: "challenging", enDef: "Difficult in an interesting way that tests your ability and effort.", zh: "有挑战性的", unit: "Unit 4" },
+
+            // Batch 4: Unit 5 & Unit 6 (Getting around & How is it made?)
+            { id: 16, word: "pedestrian", enDef: "A person who is walking in a town or city rather than travelling in a vehicle.", zh: "行人", unit: "Unit 5" },
+            { id: 17, word: "traffic jam", enDef: "A long line of vehicles on a road that cannot move or move very slowly.", zh: "交通堵塞 / 塞车", unit: "Unit 5" },
+            { id: 18, word: "factory", enDef: "A large building where machines are used to make goods in large quantities.", zh: "工厂", unit: "Unit 6" },
+            { id: 19, word: "ingredient", enDef: "One of the food items or substances used together to make a dish or product.", zh: "原料 / 成分", unit: "Unit 6" },
+            { id: 20, word: "process", enDef: "A series of actions or steps taken in order to make or achieve something.", zh: "过程 / 工序", unit: "Unit 6" },
+
+            // Batch 5: Unit 6 & Unit 7 (Production & Music and song)
+            { id: 21, word: "harvest", enDef: "The time of year when crops are cut and collected from the fields.", zh: "收获 / 收割", unit: "Unit 6" },
+            { id: 22, word: "orchestra", enDef: "A large group of musicians playing many different instruments together.", zh: "管弦乐队", unit: "Unit 7" },
+            { id: 23, word: "rhythm", enDef: "A strong, regular repeated pattern of sounds or beats in music.", zh: "节奏 / 韵律", unit: "Unit 7" },
+            { id: 24, word: "audience", enDef: "The group of people gathered together to watch or listen to a show or concert.", zh: "观众 / 听众", unit: "Unit 7" },
+            { id: 25, word: "rehearse", enDef: "To practise a play, concert, or speech before performing it in public.", zh: "排练 / 预演", unit: "Unit 7" },
+
+            // Batch 6: Unit 8, 9 & 10 (Environment & Mystery)
+            { id: 26, word: "pollution", enDef: "Damage caused to water, air, or land by harmful waste and chemicals.", zh: "污染", unit: "Unit 9" },
+            { id: 27, word: "recycle", enDef: "To treat used materials like paper, glass, or plastic so they can be used again.", zh: "回收利用", unit: "Unit 9" },
+            { id: 28, word: "mystery", enDef: "Something strange or unknown that has not yet been explained or solved.", zh: "谜 / 神秘事件", unit: "Unit 10" },
+            { id: 29, word: "evidence", enDef: "Facts, objects, or signs that help prove whether something is true.", zh: "证据 / 物证", unit: "Unit 10" },
+            { id: 30, word: "investigate", enDef: "To carefully examine a crime, problem, or mystery to discover the truth.", zh: "调查 / 侦查", unit: "Unit 10" }
+        ];
+
+        // 30 Grammar Questions covering Academy Stars Year 6 Syllabus
+        const GRAMMAR_DATA = [
+            // Past Simple vs Past Continuous (when / while)
+            {
+                q: "I _______ my homework when the power cut suddenly happened.",
+                options: ["was doing", "did", "am doing", "have done"],
+                ans: 0,
+                tip: "Past Continuous (was doing) 用于表示过去正在进行的动作，被 Past Simple (happened) 打断。"
+            },
+            {
+                q: "While the archaeologists _______ in the desert, they found an ancient coin.",
+                options: ["dig", "were digging", "are digging", "have dug"],
+                ans: 1,
+                tip: "While 后面通常接过去进行时 (were digging)，表示当时正在持续进行的背景动作。"
+            },
+            {
+                q: "What _______ you doing at 8 o'clock last night?",
+                options: ["was", "did", "were", "are"],
+                ans: 2,
+                tip: "询问过去某个具体时间点正在做的事情，主语是 you，所以用 were doing。"
+            },
+            {
+                q: "She dropped her compass while she _______ up the steep mountain.",
+                options: ["climbed", "climbs", "was climbing", "has climbed"],
+                ans: 2,
+                tip: "主句用一般过去时 (dropped)，while 从句用过去进行时 (was climbing)。"
+            },
+            // used to / didn't use to
+            {
+                q: "Hundreds of years ago, people _______ have electricity in their homes.",
+                options: ["didn't used to", "didn't use to", "not used to", "wasn't use to"],
+                ans: 1,
+                tip: "否定形式是 didn't use to + 动词原形（注意 didn't 后面 use 不加 d）。"
+            },
+            {
+                q: "My grandfather _______ write letters with a pen, but now he sends emails.",
+                options: ["use to", "used to", "using to", "is used to"],
+                ans: 1,
+                tip: "used to + 动词原形，表示“过去常常做某事（现在不再做了）”。"
+            },
+            {
+                q: "Did children _______ play video games in the 19th century?",
+                options: ["used to", "use to", "using to", "uses to"],
+                ans: 1,
+                tip: "疑问句 Did + 主语 + use to + 动词原形？Did 已经体现了过去时，所以用 use to。"
+            },
+            // Present Perfect (ever, never, already, yet, just, for, since)
+            {
+                q: "Have you _______ been to a live orchestra concert?",
+                options: ["ever", "yet", "since", "ago"],
+                ans: 0,
+                tip: "在现在完成时的疑问句中，ever 表示“曾经”（Have you ever...?）。"
+            },
+            {
+                q: "The journalist has _______ finished writing the news report. Look, here it is!",
+                options: ["yet", "ever", "just", "since"],
+                ans: 2,
+                tip: "just 用于现在完成时肯定句中，表示“刚刚”完成某事。"
+            },
+            {
+                q: "We haven't solved the mystery of the missing painting _______.",
+                options: ["already", "just", "yet", "ever"],
+                ans: 2,
+                tip: "yet 通常放在现在完成时的否定句或疑问句句末，表示“还（没）”。"
+            },
+            {
+                q: "Mr. Tan has worked as a firefighter _______ twelve years.",
+                options: ["since", "for", "from", "already"],
+                ans: 1,
+                tip: "for + 一段时间（twelve years）；since 则接过去的时间点。"
+            },
+            {
+                q: "Aisha has lived in Kuala Lumpur _______ 2019.",
+                options: ["for", "since", "yet", "ago"],
+                ans: 1,
+                tip: "since + 过去的时间点（2019），表示从2019年一直持续到现在。"
+            },
+            {
+                q: "I have _______ seen a real dinosaur skeleton, so I'm very excited to visit the museum!",
+                options: ["ever", "never", "yet", "for"],
+                ans: 1,
+                tip: "never 表示“从未”，放在 have/has 之后，构成否定意义。"
+            },
+            // Passive Voice (Present Simple & Past Simple)
+            {
+                q: "Millions of plastic bottles _______ every day around the world.",
+                options: ["recycle", "are recycled", "is recycled", "recycled"],
+                ans: 1,
+                tip: "一般现在时被动语态：主语 bottles 是复数，所以用 are + 过去分词 (recycled)。"
+            },
+            {
+                q: "Cocoa beans _______ in hot, tropical countries to make chocolate.",
+                options: ["are grown", "is grown", "grew", "growing"],
+                ans: 0,
+                tip: "可可豆是被种植的（被动语态），复数主语用 are grown。"
+            },
+            {
+                q: "This ancient temple _______ over two thousand years ago.",
+                options: ["is built", "built", "was built", "were built"],
+                ans: 2,
+                tip: "two thousand years ago 提示过去时间，神庙“被建造”，单数用 was built。"
+            },
+            {
+                q: "All the ingredients _______ together in a big machine in the factory.",
+                options: ["mix", "is mixed", "are mixed", "was mixed"],
+                ans: 2,
+                tip: "描述工厂生产工序常用一般现在时被动语态，ingredients 是复数，用 are mixed。"
+            },
+            // Modal Verbs (should, shouldn't, must, mustn't, might, could)
+            {
+                q: "Pedestrians _______ look both ways before crossing a busy road.",
+                options: ["mustn't", "should", "might not", "couldn't"],
+                ans: 1,
+                tip: "should 表示提出正确、安全的建议（“应该”）。"
+            },
+            {
+                q: "You _______ touch those electrical wires! It is extremely dangerous.",
+                options: ["mustn't", "should", "might", "could"],
+                ans: 0,
+                tip: "mustn't 表示强烈禁止（“绝对不可以”）。"
+            },
+            {
+                q: "Take a raincoat in your rucksack because it _______ rain in the mountains later.",
+                options: ["mustn't", "might", "shouldn't", "has"],
+                ans: 1,
+                tip: "might 表示不确定的可能性（“可能会”）。"
+            },
+            {
+                q: "We _______ throw rubbish into the river because it causes water pollution.",
+                options: ["should", "must", "shouldn't", "could"],
+                ans: 2,
+                tip: "shouldn't 表示“不应该”做某事。"
+            },
+            // First Conditional (If + Present Simple, will + verb)
+            {
+                q: "If we recycle more paper and plastic, we _______ protect our planet.",
+                options: ["will", "would", "did", "are"],
+                ans: 0,
+                tip: "第一条件句 (First Conditional)：If + 一般现在时，主句用 will + 动词原形。"
+            },
+            {
+                q: "If the traffic jam _______ clear soon, we will miss the start of the concert.",
+                options: ["won't", "doesn't", "didn't", "isn't"],
+                ans: 1,
+                tip: "在 If 条件从句中，用一般现在时表示将来（主语 traffic jam 为单数，否定用 doesn't）。"
+            },
+            {
+                q: "What _______ you do if you get lost in the jungle without a compass?",
+                options: ["do", "did", "will", "have"],
+                ans: 2,
+                tip: "主句询问将来可能发生的结果，用 will + 动词原形。"
+            },
+            // Relative Pronouns (who, which, where)
+            {
+                q: "A detective is a person _______ investigates crimes and looks for clues.",
+                options: ["which", "where", "who", "whose"],
+                ans: 2,
+                tip: "先行词是人 (a person)，关系代词用 who。"
+            },
+            {
+                q: "That is the factory _______ our favourite strawberry jam is made.",
+                options: ["who", "which", "where", "when"],
+                ans: 2,
+                tip: "先行词是地点 (the factory)，且在从句中作地点状语，用 where。"
+            },
+            {
+                q: "A compass is a useful tool _______ helps hikers find north.",
+                options: ["who", "where", "which", "whose"],
+                ans: 2,
+                tip: "先行词是物品 (a useful tool)，关系代词用 which（或 that）。"
+            },
+            // Question Tags & Reported Speech / General Y6 Review
+            {
+                q: "The musicians rehearsed very hard for the show, _______?",
+                options: ["didn't they", "don't they", "weren't they", "did they"],
+                ans: 0,
+                tip: "反意疑问句：前面是肯定句且动词为过去式 (rehearsed)，后面用否定助动词 didn't they。"
+            },
+            {
+                q: "There isn't much pollution in this village, _______?",
+                options: ["isn't there", "is there", "is it", "does there"],
+                ans: 1,
+                tip: "前面是否定句 (There isn't)，反意疑问句用肯定形式 is there。"
+            },
+            {
+                q: "The witness told the police officer that she _______ a strange shadow near the door.",
+                options: ["sees", "saw", "is seeing", "will see"],
+                ans: 1,
+                tip: "间接引语 (Reported Speech)：主句动词 told 是过去式，从句时态通常向后推为一般过去时 saw。"
+            }
+        ];
+
+        // 2 Original Reading Comprehension Passages incorporating Stage 1 Vocabulary
+        const READING_DATA = [
+            {
+                id: 1,
+                title: "Passage 1: The Mystery of the Old Lighthouse (古老灯塔之谜)",
+                subtitle: "Read carefully! Notice the highlighted vocabulary words from Stage 1.",
+                readSeconds: 15,
+                paragraphs: [
+                    "Last Saturday evening, twelve-year-old Mei Ling and her cousin Amir went on an adventure hike near Tanjung Tuan. Inside Amir's heavy <span class='vocab-highlight' title='双肩背包'>rucksack</span>, they packed water, snacks, a torch, and a magnetic <span class='vocab-highlight' title='指南针'>compass</span>. Suddenly, dark storm clouds covered the sky and a sudden <span class='vocab-highlight' title='停电'>power cut</span> left the entire coastal village without <span class='vocab-highlight' title='电力'>electricity</span>.",
+                    "As they hurried past an <span class='vocab-highlight' title='古老的'>ancient</span> lighthouse, Mei Ling noticed a faint blue light flashing inside the locked tower. 'Look!' she said in a quiet <span class='vocab-highlight' title='低声说'>whisper</span>. 'Nobody has lived there for fifty years. This is a real <span class='vocab-highlight' title='谜 / 神秘事件'>mystery</span>!'",
+                    "Instead of entering the dangerous building alone, they immediately called the local ranger station to report an <span class='vocab-highlight' title='紧急情况'>emergency</span>. Ten minutes later, a rescue team arrived with safety <span class='vocab-highlight' title='装备'>equipment</span> to <span class='vocab-highlight' title='调查'>investigate</span> the tower. Inside, they found valuable <span class='vocab-highlight' title='证据'>evidence</span>—a dropped radio and muddy footprints—proving that an injured hiker had taken shelter there during the storm. An <span class='vocab-highlight' title='救护车'>ambulance</span> soon took the hiker safely to the hospital, and the rangers praised Mei Ling and Amir for their smart thinking!"
+                ],
+                questions: [
+                    {
+                        q: "1. What caused the coastal village to lose electricity?",
+                        options: [
+                            "A sudden power cut during a storm",
+                            "The lighthouse keeper turned off the switches",
+                            "An ambulance crashed into a pole",
+                            "Amir broke the generator"
+                        ],
+                        ans: 0,
+                        explain: "第一段提到：a sudden power cut left the entire coastal village without electricity（一场突如其来的停电使整个沿海村庄失去了电力）。"
+                    },
+                    {
+                        q: "2. Which item did Amir carry inside his rucksack?",
+                        options: [
+                            "A musical instrument",
+                            "A magnetic compass",
+                            "A glass bottle",
+                            "A camera"
+                        ],
+                        ans: 1,
+                        explain: "第一段明确列出背包里有：water, snacks, a torch, and a magnetic compass（指南针）。"
+                    },
+                    {
+                        q: "3. Why did Mei Ling speak in a whisper near the lighthouse?",
+                        options: [
+                            "She had a sore throat from hiking.",
+                            "She was trying to sleep.",
+                            "She saw a mysterious flashing light inside an empty, ancient tower.",
+                            "She wanted to scare Amir."
+                        ],
+                        ans: 2,
+                        explain: "第二段中，Mei Ling 看到没人居住的古老灯塔里有微弱的蓝光闪烁，觉得是个神秘事件，所以低声说话。"
+                    },
+                    {
+                        q: "4. What did the rescue team find as evidence inside the lighthouse?",
+                        options: [
+                            "Ancient gold coins",
+                            "A dropped radio and muddy footprints",
+                            "A broken ambulance",
+                            "Bags of plastic pollution"
+                        ],
+                        ans: 1,
+                        explain: "第三段提到他们找到了证据：a dropped radio and muddy footprints（掉落的收音机和泥泞的脚印）。"
+                    },
+                    {
+                        q: "5. Why did the rangers praise Mei Ling and Amir at the end?",
+                        options: [
+                            "Because they entered the dangerous building by themselves.",
+                            "Because they fixed the electricity in the village.",
+                            "Because they did not enter alone and called for help during an emergency.",
+                            "Because they drove the ambulance to the hospital."
+                        ],
+                        ans: 2,
+                        explain: "他们没有独自进入危险的建筑，而是立刻打电话报告紧急情况，展现出了冷静和智慧。"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Passage 2: Green Music and the Eco-Factory (绿色音乐与环保工厂)",
+                subtitle: "Read carefully! Notice the highlighted vocabulary words from Stage 1.",
+                readSeconds: 15,
+                paragraphs: [
+                    "Last month, Daniel worked as a young student <span class='vocab-highlight' title='新闻记者'>journalist</span> to film a short <span class='vocab-highlight' title='纪录片'>documentary</span> for his school's Earth Day project. Despite a terrible morning <span class='vocab-highlight' title='交通堵塞'>traffic jam</span> in the city centre, he arrived on time at a modern eco-friendly <span class='vocab-highlight' title='工厂'>factory</span>.",
+                    "Inside, the manager explained the amazing <span class='vocab-highlight' title='过程 / 工序'>process</span> of turning waste into art. Instead of throwing old plastic and metal into landfills where they cause <span class='vocab-highlight' title='污染'>pollution</span>, workers collect and <span class='vocab-highlight' title='回收利用'>recycle</span> these materials. Plastic bottles and tin cans are the main <span class='vocab-highlight' title='原料 / 成分'>ingredients</span> used to build brand-new violins, drums, and flutes!",
+                    "That evening, Daniel filmed the 'Eco-Youth <span class='vocab-highlight' title='管弦乐队'>Orchestra</span>' performing on stage. The musicians had practised for months to <span class='vocab-highlight' title='排练'>rehearse</span> their songs. When they played an energetic <span class='vocab-highlight' title='节奏'>rhythm</span> on instruments made entirely from recycled rubbish, the <span class='vocab-highlight' title='观众'>audience</span> cheered loudly. Daniel's video proved that protecting nature can sound wonderful!"
+                ],
+                questions: [
+                    {
+                        q: "1. Why did Daniel visit the eco-friendly factory?",
+                        options: [
+                            "To buy a new bicycle",
+                            "To film a documentary for his school's Earth Day project",
+                            "To escape from a traffic jam",
+                            "To apply for a job as a factory manager"
+                        ],
+                        ans: 1,
+                        explain: "第一段提到 Daniel 作为小记者去拍摄一部关于学校地球日项目的纪录片（documentary）。"
+                    },
+                    {
+                        q: "2. What problem did Daniel experience on his way to the factory?",
+                        options: [
+                            "He got lost without a compass.",
+                            "He was stuck in a terrible traffic jam.",
+                            "There was a power cut on the train.",
+                            "He forgot his rucksack at home."
+                        ],
+                        ans: 1,
+                        explain: "第一段提到：Despite a terrible morning traffic jam in the city centre（尽管早上遭遇了严重的交通堵塞）。"
+                    },
+                    {
+                        q: "3. What are the main ingredients used to make the instruments in the factory?",
+                        options: [
+                            "Recycled plastic bottles and tin cans",
+                            "Fresh wood harvested from the jungle",
+                            "Ancient stones and sand",
+                            "Glass and paper"
+                        ],
+                        ans: 0,
+                        explain: "第二段指出：Plastic bottles and tin cans are the main ingredients used to build brand-new violins, drums, and flutes。"
+                    },
+                    {
+                        q: "4. How does the factory help reduce pollution?",
+                        options: [
+                            "By throwing waste into the ocean",
+                            "By recycling old plastic and metal instead of sending them to landfills",
+                            "By stopping all pedestrians from walking outside",
+                            "By turning off all machines"
+                        ],
+                        ans: 1,
+                        explain: "第二段提到工厂收集并回收利用（recycle）旧塑料和金属，从而减少污染（pollution）。"
+                    },
+                    {
+                        q: "5. How did the audience react to the Eco-Youth Orchestra's performance?",
+                        options: [
+                            "They walked out of the hall quietly.",
+                            "They fell asleep during the show.",
+                            "They cheered loudly at the energetic rhythm.",
+                            "They asked the musicians to rehearse again."
+                        ],
+                        ans: 2,
+                        explain: "第三段提到当乐队用回收乐器演奏出充满活力的节奏时，观众（audience）大声欢呼（cheered loudly）。"
+                    }
+                ]
+            }
+        ];
+
+        /* ============================================================================
+           2. WEB AUDIO API SOUND ENGINE & SPEECH SYNTHESIS
+           ============================================================================ */
+        let soundEnabled = true;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) audioCtx = new AudioContext();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(520, now);
+                osc.frequency.exponentialRampToValueAtTime(680, now + 0.06);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+                osc.start(now);
+                osc.stop(now + 0.07);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.09); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.18); // G5
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(160, now + 0.25);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                osc.start(now);
+                osc.stop(now + 0.28);
+            } else if (type === 'fanfare') {
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(freq, now + idx * 0.11);
+                    g.gain.setValueAtTime(0.16, now + idx * 0.11);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.32);
+                    o.start(now + idx * 0.11);
+                    o.stop(now + idx * 0.11 + 0.32);
+                });
+            }
+        }
+
+        function speakWord(text) {
+            playTone('click');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(text);
+                utter.lang = 'en-GB'; // British English matches Academy Stars curriculum
+                utter.rate = 0.92;
+                window.speechSynthesis.speak(utter);
+            } else {
+                showToast("您的浏览器不支持语音朗读功能 / Speech not supported.");
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (soundEnabled) {
+                icon.className = 'fa-solid fa-volume-high text-indigo-600';
+                playTone('click');
+                showToast("音效已开启 / Sound ON");
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-slate-400';
+                showToast("音效已静音 / Sound OFF");
+            }
+        }
+
+        function showToast(msg) {
+            const box = document.getElementById('toast-box');
+            document.getElementById('toast-msg').textContent = msg;
+            box.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => {
+                box.classList.add('hidden');
+            }, 2600);
+        }
+
+        /* ============================================================================
+           3. GAME STATE MANAGEMENT
+           ============================================================================ */
+        const state = {
+            screen: 'welcome', // 'welcome' | 'stage1' | 'stage2' | 'stage3' | 'results'
+            xp: 0,
+            mistakes: [], // Track missed items for end-of-game review
+
+            // Stage 1: Vocab (6 batches of 5)
+            s1: {
+                batchIndex: 0, // 0 to 5
+                phase: 'study', // 'study' | 'quiz'
+                quizQueue: [],
+                currentQuizIdx: 0,
+                subStep: 'en', // 'en' (pick English word) | 'zh' (pick Chinese meaning)
+                enOptions: [],
+                zhOptions: [],
+                enAnswered: false,
+                zhAnswered: false,
+                selectedEnIdx: null,
+                selectedZhIdx: null,
+                wordPerfect: true,
+                scoreCount: 0 // out of 30 words mastered
+            },
+
+            // Stage 2: Grammar (30 questions)
+            s2: {
+                qIndex: 0,
+                answered: false,
+                selectedIdx: null,
+                scoreCount: 0 // out of 30
+            },
+
+            // Stage 3: Reading Comprehension (2 passages x 5 questions)
+            s3: {
+                passageIdx: 0, // 0 or 1
+                unlocked: false,
+                timerLeft: 15,
+                timerInterval: null,
+                qIndex: 0, // 0 to 4 within current passage
+                answered: false,
+                selectedIdx: null,
+                scoreCount: 0 // out of 10
+            }
+        };
+
+        function addXP(points) {
+            state.xp += points;
+            document.getElementById('hud-score').textContent = state.xp;
+        }
+
+        function updateNavHighlight() {
+            [1, 2, 3].forEach(num => {
+                const btn = document.getElementById(`nav-stage-${num}`);
+                if (state.screen === `stage${num}`) {
+                    btn.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 bg-indigo-600 text-white shadow-sm";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 text-slate-600 hover:bg-white";
+                }
+            });
+        }
+
+        function goHome() {
+            clearInterval(state.s3.timerInterval);
+            state.screen = 'welcome';
+            updateNavHighlight();
+            render();
+        }
+
+        function jumpToStage(stageNum) {
+            playTone('click');
+            clearInterval(state.s3.timerInterval);
+            if (stageNum === 1) {
+                state.screen = 'stage1';
+                // Keep current batch if already in progress, else start at 0
+            } else if (stageNum === 2) {
+                state.screen = 'stage2';
+            } else if (stageNum === 3) {
+                state.screen = 'stage3';
+                if (!state.s3.unlocked) startReadingTimer();
+            }
+            updateNavHighlight();
+            render();
+        }
+
+        function shuffleArray(arr) {
+            const copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        /* ============================================================================
+           4. STAGE 1 LOGIC (VOCABULARY: 5 STUDY -> 5 TWO-STEP QUIZ)
+           ============================================================================ */
+        function startStage1() {
+            playTone('click');
+            state.screen = 'stage1';
+            state.s1.batchIndex = 0;
+            state.s1.phase = 'study';
+            state.s1.scoreCount = 0;
+            updateNavHighlight();
+            render();
+        }
+
+        function startBatchQuiz() {
+            playTone('click');
+            const startIdx = state.s1.batchIndex * 5;
+            const batchWords = VOCAB_DATA.slice(startIdx, startIdx + 5);
+            state.s1.quizQueue = shuffleArray(batchWords);
+            state.s1.currentQuizIdx = 0;
+            state.s1.phase = 'quiz';
+            setupVocabQuestion();
+            render();
+        }
+
+        function setupVocabQuestion() {
+            const targetWord = state.s1.quizQueue[state.s1.currentQuizIdx];
+            state.s1.subStep = 'en';
+            state.s1.enAnswered = false;
+            state.s1.zhAnswered = false;
+            state.s1.selectedEnIdx = null;
+            state.s1.selectedZhIdx = null;
+            state.s1.wordPerfect = true;
+
+            // Build 4 English word options (1 correct + 3 distractors from full list)
+            const distractors = shuffleArray(VOCAB_DATA.filter(w => w.id !== targetWord.id)).slice(0, 3);
+            state.s1.enOptions = shuffleArray([targetWord, ...distractors]);
+
+            // Build 4 Chinese meaning options
+            const zhDistractors = shuffleArray(VOCAB_DATA.filter(w => w.id !== targetWord.id)).slice(0, 3);
+            state.s1.zhOptions = shuffleArray([targetWord, ...zhDistractors]);
+        }
+
+        function handleVocabEnSelect(idx) {
+            if (state.s1.enAnswered) return;
+            const targetWord = state.s1.quizQueue[state.s1.currentQuizIdx];
+            const chosen = state.s1.enOptions[idx];
+            state.s1.selectedEnIdx = idx;
+            state.s1.enAnswered = true;
+
+            if (chosen.id === targetWord.id) {
+                playTone('correct');
+                speakWord(targetWord.word);
+                addXP(10);
+            } else {
+                playTone('wrong');
+                state.s1.wordPerfect = false;
+                recordMistake(`生字英文配对 (${targetWord.word})`, `定义: ${targetWord.enDef} → 正确答案: ${targetWord.word} (${targetWord.zh})`);
+            }
+
+            // Automatically unlock Step B (Chinese meaning) after brief pause or immediately
+            state.s1.subStep = 'zh';
+            render();
+        }
+
+        function handleVocabZhSelect(idx) {
+            if (state.s1.zhAnswered) return;
+            const targetWord = state.s1.quizQueue[state.s1.currentQuizIdx];
+            const chosen = state.s1.zhOptions[idx];
+            state.s1.selectedZhIdx = idx;
+            state.s1.zhAnswered = true;
+
+            if (chosen.id === targetWord.id) {
+                playTone('correct');
+                addXP(10);
+                if (state.s1.wordPerfect) {
+                    state.s1.scoreCount++;
+                }
+            } else {
+                playTone('wrong');
+                recordMistake(`生字华语意思 (${targetWord.word})`, `${targetWord.word} 的正确华语意思是: ${targetWord.zh}`);
+            }
+            render();
+        }
+
+        function nextVocabQuizItem() {
+            playTone('click');
+            if (state.s1.currentQuizIdx < 4) {
+                state.s1.currentQuizIdx++;
+                setupVocabQuestion();
+                render();
+            } else {
+                // Finished this batch of 5!
+                if (state.s1.batchIndex < 5) {
+                    state.s1.batchIndex++;
+                    state.s1.phase = 'study';
+                    playTone('fanfare');
+                    render();
+                } else {
+                    // All 30 words completed! Move to Stage 2
+                    playTone('fanfare');
+                    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+                    state.screen = 'stage2';
+                    updateNavHighlight();
+                    render();
+                }
+            }
+        }
+
+        /* ============================================================================
+           5. STAGE 2 LOGIC (GRAMMAR ARENA: 30 QUESTIONS)
+           ============================================================================ */
+        function handleGrammarSelect(idx) {
+            if (state.s2.answered) return;
+            const currentQ = GRAMMAR_DATA[state.s2.qIndex];
+            state.s2.selectedIdx = idx;
+            state.s2.answered = true;
+
+            if (idx === currentQ.ans) {
+                playTone('correct');
+                addXP(15);
+                state.s2.scoreCount++;
+            } else {
+                playTone('wrong');
+                recordMistake(`语法第 ${state.s2.qIndex + 1} 题`, `${currentQ.q.replace('_______', `[${currentQ.options[currentQ.ans]}]`)} — ${currentQ.tip}`);
+            }
+            render();
+        }
+
+        function nextGrammarQuestion() {
+            playTone('click');
+            if (state.s2.qIndex < GRAMMAR_DATA.length - 1) {
+                state.s2.qIndex++;
+                state.s2.answered = false;
+                state.s2.selectedIdx = null;
+                render();
+            } else {
+                // Completed Stage 2 -> Move to Stage 3
+                playTone('fanfare');
+                confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+                state.screen = 'stage3';
+                state.s3.passageIdx = 0;
+                state.s3.unlocked = false;
+                state.s3.qIndex = 0;
+                state.s3.answered = false;
+                state.s3.selectedIdx = null;
+                updateNavHighlight();
+                startReadingTimer();
+                render();
+            }
+        }
+
+        /* ============================================================================
+           6. STAGE 3 LOGIC (READING COMPREHENSION WITH READING LOCK GATE)
+           ============================================================================ */
+        function startReadingTimer() {
+            clearInterval(state.s3.timerInterval);
+            const passage = READING_DATA[state.s3.passageIdx];
+            state.s3.timerLeft = passage.readSeconds;
+            state.s3.unlocked = false;
+
+            state.s3.timerInterval = setInterval(() => {
+                if (state.s3.timerLeft > 0) {
+                    state.s3.timerLeft--;
+                    const timerEl = document.getElementById('reading-countdown');
+                    const btnEl = document.getElementById('btn-unlock-reading');
+                    if (timerEl) timerEl.textContent = state.s3.timerLeft;
+                    if (state.s3.timerLeft === 0 && btnEl) {
+                        btnEl.disabled = false;
+                        btnEl.innerHTML = `<i class="fa-solid fa-lock-open mr-2"></i>我已仔细读完文章，解锁题目 (Unlock Questions)`;
+                        btnEl.classList.remove('bg-slate-400');
+                        btnEl.classList.add('bg-emerald-600', 'hover:bg-emerald-700', 'animate-bounce');
+                    }
+                } else {
+                    clearInterval(state.s3.timerInterval);
+                }
+            }, 1000);
+        }
+
+        function unlockReadingQuestions() {
+            if (state.s3.timerLeft > 0) return;
+            playTone('correct');
+            clearInterval(state.s3.timerInterval);
+            state.s3.unlocked = true;
+            state.s3.qIndex = 0;
+            state.s3.answered = false;
+            state.s3.selectedIdx = null;
+            render();
+        }
+
+        function handleReadingSelect(idx) {
+            if (state.s3.answered) return;
+            const passage = READING_DATA[state.s3.passageIdx];
+            const currentQ = passage.questions[state.s3.qIndex];
+            state.s3.selectedIdx = idx;
+            state.s3.answered = true;
+
+            if (idx === currentQ.ans) {
+                playTone('correct');
+                addXP(20);
+                state.s3.scoreCount++;
+            } else {
+                playTone('wrong');
+                recordMistake(`阅读理解 ${passage.id} - 第 ${state.s3.qIndex + 1} 题`, `${currentQ.q} → 答案: ${currentQ.options[currentQ.ans]}`);
+            }
+            render();
+        }
+
+        function nextReadingQuestion() {
+            playTone('click');
+            const passage = READING_DATA[state.s3.passageIdx];
+            if (state.s3.qIndex < passage.questions.length - 1) {
+                state.s3.qIndex++;
+                state.s3.answered = false;
+                state.s3.selectedIdx = null;
+                render();
+            } else {
+                // Finished current passage
+                if (state.s3.passageIdx < READING_DATA.length - 1) {
+                    state.s3.passageIdx++;
+                    state.s3.unlocked = false;
+                    state.s3.qIndex = 0;
+                    state.s3.answered = false;
+                    state.s3.selectedIdx = null;
+                    playTone('fanfare');
+                    startReadingTimer();
+                    render();
+                } else {
+                    // Finished ALL 3 STAGES!
+                    finishGame();
+                }
+            }
+        }
+
+        function recordMistake(category, detail) {
+            if (!state.mistakes.some(m => m.detail === detail)) {
+                state.mistakes.push({ category, detail });
+            }
+        }
+
+        function finishGame() {
+            playTone('fanfare');
+            state.screen = 'results';
+            updateNavHighlight();
+            render();
+            confetti({ particleCount: 130, spread: 80, origin: { y: 0.55 } });
+        }
+
+        function resetFullGame() {
+            playTone('click');
+            clearInterval(state.s3.timerInterval);
+            state.xp = 0;
+            state.mistakes = [];
+            state.s1 = {
+                batchIndex: 0, phase: 'study', quizQueue: [], currentQuizIdx: 0,
+                subStep: 'en', enOptions: [], zhOptions: [], enAnswered: false,
+                zhAnswered: false, selectedEnIdx: null, selectedZhIdx: null,
+                wordPerfect: true, scoreCount: 0
+            };
+            state.s2 = { qIndex: 0, answered: false, selectedIdx: null, scoreCount: 0 };
+            state.s3 = {
+                passageIdx: 0, unlocked: false, timerLeft: 15, timerInterval: null,
+                qIndex: 0, answered: false, selectedIdx: null, scoreCount: 0
+            };
+            document.getElementById('hud-score').textContent = '0';
+            startStage1();
+        }
+
+        /* ============================================================================
+           7. UI RENDERING ENGINE
+           ============================================================================ */
+        function render() {
+            const container = document.getElementById('app-container');
+            if (state.screen === 'welcome') {
+                container.innerHTML = renderWelcomeScreen();
+            } else if (state.screen === 'stage1') {
+                container.innerHTML = renderStage1();
+            } else if (state.screen === 'stage2') {
+                container.innerHTML = renderStage2();
+            } else if (state.screen === 'stage3') {
+                container.innerHTML = renderStage3();
+            } else if (state.screen === 'results') {
+                container.innerHTML = renderResultsScreen();
+            }
+        }
+
+        function renderWelcomeScreen() {
+            return `
+            <div class="bg-white rounded-3xl shadow-xl border-2 border-indigo-100 p-6 sm:p-10 text-center animate-pop">
+                <div class="inline-flex items-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold mb-4 border border-indigo-200">
+                    <i class="fa-solid fa-graduation-cap"></i> Malaysia KSSR Year 6 • CEFR A2/B1
+                </div>
+                <h2 class="font-game text-3xl sm:text-5xl font-bold text-slate-900 mb-3">
+                    Academy Stars Year 6<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">英文全能复习大闯关</span>
+                </h2>
+                <p class="text-slate-600 max-w-2xl mx-auto text-sm sm:text-base mb-8 leading-relaxed">
+                    欢迎来到六年级英文复习冒险岛！完成以下三大关卡，全面掌握 <b>Academy Stars Year 6</b> 核心生字、语法规则与阅读理解技巧。
+                </p>
+
+                <!-- 3 Stage Overview Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8 text-left">
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 p-5 rounded-2xl border-2 border-indigo-100">
+                        <div class="w-11 h-11 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-lg font-bold mb-3 shadow">1</div>
+                        <h3 class="font-game text-lg font-bold text-indigo-950 mb-1">第一关：生字回顾与双步考</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            精选 <b>30个</b> 课本核心生字（含英文注释与华语意思），<b>每5个一组</b> 先认读发音，再通过“看英文解释选单词 + 选华语意思”双重测试！
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-pink-50 p-5 rounded-2xl border-2 border-purple-100">
+                        <div class="w-11 h-11 rounded-xl bg-purple-600 text-white flex items-center justify-center text-lg font-bold mb-3 shadow">2</div>
+                        <h3 class="font-game text-lg font-bold text-purple-950 mb-1">第二关：语法大闯关</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            挑战 <b>30道</b> 六年级必考语法题（包括 Past Continuous, Present Perfect, Passive Voice, First Conditional 等），每题附带双语解析。
+                        </p>
+                    </div>
+                    <div class="bg-gradient-to-br from-emerald-50 to-teal-50 p-5 rounded-2xl border-2 border-emerald-100">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg font-bold mb-3 shadow">3</div>
+                        <h3 class="font-game text-lg font-bold text-emerald-950 mb-1">第三关：阅读理解挑战</h3>
+                        <p class="text-xs text-slate-600 leading-relaxed">
+                            阅读 <b>2篇</b> 融入第一关生字的原创故事（每篇5题）。必须先认真读完文章解锁题目后才能作答，培养良好阅读习惯！
+                        </p>
+                    </div>
+                </div>
+
+                <button onclick="startStage1()" class="btn-3d bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-game text-lg sm:text-xl font-bold px-8 py-4 rounded-2xl inline-flex items-center gap-3">
+                    <span>开始第一关：生字大冒险</span>
+                    <i class="fa-solid fa-rocket"></i>
+                </button>
+            </div>
+            `;
+        }
+
+        /* ---------------- STAGE 1 RENDERER ---------------- */
+        function renderStage1() {
+            const batchNum = state.s1.batchIndex + 1;
+            const startIdx = state.s1.batchIndex * 5;
+            const batchWords = VOCAB_DATA.slice(startIdx, startIdx + 5);
+            const overallProgress = Math.round(((state.s1.batchIndex * 5 + (state.s1.phase === 'quiz' ? state.s1.currentQuizIdx : 0)) / 30) * 100);
+
+            // STUDY PHASE (5 words cards)
+            if (state.s1.phase === 'study') {
+                const cardsHtml = batchWords.map((item, i) => `
+                    <div class="bg-white rounded-2xl border-2 border-indigo-100 p-4 sm:p-5 shadow-sm hover:border-indigo-300 transition flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-2">
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-600">${item.unit} • #${item.id}</span>
+                                <button onclick="speakWord('${item.word.replace(/'/g, "\\'")}')" class="w-9 h-9 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 flex items-center justify-center transition" title="点击听发音 / Listen">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+                            <h3 class="font-game text-2xl font-bold text-slate-900 mb-1">${item.word}</h3>
+                            <p class="text-base font-bold text-indigo-600 mb-3">${item.zh}</p>
+                        </div>
+                        <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                            <p class="text-xs uppercase tracking-wider text-slate-400 font-bold mb-1">English Definition:</p>
+                            <p class="text-sm text-slate-700 leading-snug">${item.enDef}</p>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                <div class="animate-pop">
+                    <!-- Stage Header & Progress -->
+                    <div class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-indigo-100 shadow-sm mb-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Stage 1 • 生字回顾 (认字阶段)</span>
+                                <h2 class="font-game text-xl sm:text-2xl font-bold text-slate-900">第 ${batchNum} / 6 组生字 (第 ${startIdx + 1} - ${startIdx + 5} 个)</h2>
+                            </div>
+                            <span class="bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+                                总进度: ${overallProgress}%
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-indigo-600 h-full transition-all duration-300" style="width: ${overallProgress}%"></div>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-3">
+                            <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
+                            请仔细记住这 <b>5个生字</b> 的英文注释和华语意思（可点击小喇叭听发音），记熟后点击下方按钮立即小考！
+                        </p>
+                    </div>
+
+                    <!-- 5 Vocabulary Cards Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        ${cardsHtml}
+                    </div>
+
+                    <!-- Start Mini-Quiz Button -->
+                    <div class="text-center">
+                        <button onclick="startBatchQuiz()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white font-game text-lg font-bold px-8 py-3.5 rounded-2xl inline-flex items-center gap-2.5">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                            <span>我记好了，开始这 5 题小考！(Start Mini-Quiz)</span>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }
+
+            // QUIZ PHASE (Two-step testing for each of the 5 words)
+            const targetWord = state.s1.quizQueue[state.s1.currentQuizIdx];
+            const quizNumInBatch = state.s1.currentQuizIdx + 1;
+
+            const enButtonsHtml = state.s1.enOptions.map((opt, idx) => {
+                let btnStyle = "bg-white hover:bg-indigo-50 border-slate-200 text-slate-800";
+                let iconHtml = "";
+                if (state.s1.enAnswered) {
+                    if (opt.id === targetWord.id) {
+                        btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-200";
+                        iconHtml = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>`;
+                    } else if (idx === state.s1.selectedEnIdx) {
+                        btnStyle = "bg-rose-50 border-rose-500 text-rose-900 animate-shake";
+                        iconHtml = `<i class="fa-solid fa-circle-xmark text-rose-600 text-lg"></i>`;
+                    } else {
+                        btnStyle = "bg-slate-50 border-slate-200 text-slate-400 opacity-60";
+                    }
+                }
+                return `
+                <button onclick="handleVocabEnSelect(${idx})" ${state.s1.enAnswered ? 'disabled' : ''} class="p-3.5 sm:p-4 rounded-2xl border-2 font-game text-base sm:text-lg font-bold text-left transition flex items-center justify-between ${btnStyle}">
+                    <span>${String.fromCharCode(65 + idx)}. ${opt.word}</span>
+                    ${iconHtml}
+                </button>
+                `;
+            }).join('');
+
+            const zhButtonsHtml = state.s1.zhOptions.map((opt, idx) => {
+                let btnStyle = "bg-white hover:bg-purple-50 border-slate-200 text-slate-800";
+                let iconHtml = "";
+                if (state.s1.zhAnswered) {
+                    if (opt.id === targetWord.id) {
+                        btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-900 ring-2 ring-emerald-200";
+                        iconHtml = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>`;
+                    } else if (idx === state.s1.selectedZhIdx) {
+                        btnStyle = "bg-rose-50 border-rose-500 text-rose-900 animate-shake";
+                        iconHtml = `<i class="fa-solid fa-circle-xmark text-rose-600 text-lg"></i>`;
+                    } else {
+                        btnStyle = "bg-slate-50 border-slate-200 text-slate-400 opacity-60";
+                    }
+                }
+                return `
+                <button onclick="handleVocabZhSelect(${idx})" ${state.s1.zhAnswered ? 'disabled' : ''} class="p-3.5 sm:p-4 rounded-2xl border-2 text-sm sm:text-base font-bold text-left transition flex items-center justify-between ${btnStyle}">
+                    <span>${String.fromCharCode(65 + idx)}. ${opt.zh}</span>
+                    ${iconHtml}
+                </button>
+                `;
+            }).join('');
+
+            return `
+            <div class="max-w-3xl mx-auto animate-pop">
+                <!-- Quiz Header -->
+                <div class="bg-white rounded-2xl p-4 border-2 border-indigo-100 shadow-sm mb-5 flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-indigo-600">第 ${batchNum}/6 组随堂小考</span>
+                        <h2 class="font-game text-lg sm:text-xl font-bold text-slate-900">生字测试：第 ${quizNumInBatch} / 5 题</h2>
+                    </div>
+                    <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+                        双步挑战 (Step A + Step B)
+                    </span>
+                </div>
+
+                <!-- Step A: Read English Definition -> Choose English Word -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 border-2 border-indigo-100 shadow-md mb-5">
+                    <div class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                        <span>第一步 (Step A)：根据英文注释选出对应的英文字</span>
+                    </div>
+                    <div class="bg-slate-50 border-l-4 border-indigo-500 p-4 rounded-r-2xl mb-5">
+                        <p class="text-base sm:text-lg font-medium text-slate-800 leading-relaxed">"${targetWord.enDef}"</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${enButtonsHtml}
+                    </div>
+                </div>
+
+                <!-- Step B: Choose Chinese Meaning (Appears immediately after Step A is answered) -->
+                ${state.s1.enAnswered ? `
+                <div class="bg-white rounded-3xl p-5 sm:p-7 border-2 border-purple-200 shadow-md mb-5 animate-pop">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <span class="inline-flex items-center gap-1.5 bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1 rounded-full">
+                            <span>第二步 (Step B)：选出该英文字的华语意思</span>
+                        </span>
+                        <button onclick="speakWord('${targetWord.word.replace(/'/g, "\\'")}')" class="text-xs font-bold text-indigo-600 hover:underline flex items-center gap-1">
+                            <i class="fa-solid fa-volume-high"></i> 再听一次 "${targetWord.word}"
+                        </button>
+                    </div>
+                    <p class="text-base sm:text-lg font-bold text-slate-900 mb-4">
+                        What is the Chinese meaning of <span class="text-indigo-600 underline decoration-wavy">${targetWord.word}</span> ?
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${zhButtonsHtml}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Next Button -->
+                ${state.s1.zhAnswered ? `
+                <div class="text-center animate-pop">
+                    <button onclick="nextVocabQuizItem()" class="btn-3d bg-indigo-600 hover:bg-indigo-700 text-white font-game text-lg font-bold px-8 py-3.5 rounded-2xl inline-flex items-center gap-2">
+                        <span>${quizNumInBatch < 5 ? '下一题 (Next Word)' : (batchNum < 6 ? '进入下一组 5 个生字 (Next Batch)' : '完成第一关！进入第二关语法挑战')}</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+            `;
+        }
+
+        /* ---------------- STAGE 2 RENDERER (GRAMMAR 30 QS) ---------------- */
+        function renderStage2() {
+            const qIdx = state.s2.qIndex;
+            const item = GRAMMAR_DATA[qIdx];
+            const progress = Math.round(((qIdx + (state.s2.answered ? 1 : 0)) / GRAMMAR_DATA.length) * 100);
+
+            const optionsHtml = item.options.map((opt, idx) => {
+                let style = "bg-white hover:bg-purple-50 border-slate-200 text-slate-800";
+                let icon = "";
+                if (state.s2.answered) {
+                    if (idx === item.ans) {
+                        style = "bg-emerald-50 border-emerald-500 text-emerald-950 ring-2 ring-emerald-200";
+                        icon = `<i class="fa-solid fa-circle-check text-emerald-600 text-xl"></i>`;
+                    } else if (idx === state.s2.selectedIdx) {
+                        style = "bg-rose-50 border-rose-500 text-rose-950 animate-shake";
+                        icon = `<i class="fa-solid fa-circle-xmark text-rose-600 text-xl"></i>`;
+                    } else {
+                        style = "bg-slate-50 border-slate-200 text-slate-400 opacity-60";
+                    }
+                }
+                return `
+                <button onclick="handleGrammarSelect(${idx})" ${state.s2.answered ? 'disabled' : ''} class="p-4 rounded-2xl border-2 text-left font-bold text-base sm:text-lg transition flex items-center justify-between ${style}">
+                    <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+                    ${icon}
+                </button>
+                `;
+            }).join('');
+
+            // Format blank space visually
+            const formattedQ = item.q.replace('_______', `<span class="inline-block min-w-[90px] border-b-4 border-purple-500 text-purple-700 font-bold px-2 text-center">${state.s2.answered ? item.options[item.ans] : '______'}</span>`);
+
+            return `
+            <div class="max-w-3xl mx-auto animate-pop">
+                <!-- Progress Header -->
+                <div class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-purple-100 shadow-sm mb-5">
+                    <div class="flex items-center justify-between mb-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-purple-600">Stage 2 • Grammar Arena 语法大闯关</span>
+                            <h2 class="font-game text-xl sm:text-2xl font-bold text-slate-900">语法第 ${qIdx + 1} / 30 题</h2>
+                        </div>
+                        <span class="bg-purple-100 text-purple-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            答对: ${state.s2.scoreCount} 题
+                        </span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-purple-600 h-full transition-all duration-300" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+
+                <!-- Question Card -->
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-purple-100 shadow-md mb-5">
+                    <p class="text-lg sm:text-2xl font-semibold text-slate-900 leading-relaxed mb-6">
+                        ${formattedQ}
+                    </p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        ${optionsHtml}
+                    </div>
+
+                    <!-- Grammar Explanation Box -->
+                    ${state.s2.answered ? `
+                    <div class="mt-6 p-4 rounded-2xl ${state.s2.selectedIdx === item.ans ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-amber-50 border border-amber-200 text-amber-950'} animate-pop">
+                        <p class="font-bold text-sm mb-1">
+                            ${state.s2.selectedIdx === item.ans ? '🎉 太棒了，答对了！(Correct!)' : '💡 语法小贴士 (Grammar Tip):'}
+                        </p>
+                        <p class="text-sm leading-relaxed">${item.tip}</p>
+                    </div>
+                    ` : ''}
+                </div>
+
+                ${state.s2.answered ? `
+                <div class="text-center animate-pop">
+                    <button onclick="nextGrammarQuestion()" class="btn-3d bg-purple-600 hover:bg-purple-700 text-white font-game text-lg font-bold px-8 py-3.5 rounded-2xl inline-flex items-center gap-2">
+                        <span>${qIdx < GRAMMAR_DATA.length - 1 ? '下一题 (Next Question)' : '完成第二关！进入第三关阅读理解'}</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+            `;
+        }
+
+        /* ---------------- STAGE 3 RENDERER (READING COMPREHENSION) ---------------- */
+        function renderStage3() {
+            const passage = READING_DATA[state.s3.passageIdx];
+            const paragraphsHtml = passage.paragraphs.map(p => `<p class="mb-4 leading-relaxed text-slate-800 text-base sm:text-lg">${p}</p>`).join('');
+
+            // CASE A: LOCKED READING GATE (Student must read first!)
+            if (!state.s3.unlocked) {
+                const isReady = state.s3.timerLeft <= 0;
+                return `
+                <div class="max-w-4xl mx-auto animate-pop">
+                    <div class="bg-white rounded-2xl p-4 sm:p-5 border-2 border-emerald-100 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Stage 3 • Reading Comprehension 阅读理解 (${state.s3.passageIdx + 1} / 2)</span>
+                            <h2 class="font-game text-xl sm:text-2xl font-bold text-slate-900">${passage.title}</h2>
+                        </div>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+                            <i class="fa-solid fa-book-open-reader mr-1"></i> 必须先读完理解文才能解锁题目
+                        </span>
+                    </div>
+
+                    <!-- Reading Passage Card -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-200 shadow-md mb-6">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                            <span class="text-xs font-bold text-slate-500">
+                                <i class="fa-solid fa-highlighter text-amber-500 mr-1"></i> 黄色高亮词为第一关学过的生字（鼠标悬停可看提示）
+                            </span>
+                        </div>
+                        <div class="prose max-w-none">
+                            ${paragraphsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Locked Quiz Gate Banner -->
+                    <div class="bg-slate-900 text-white rounded-3xl p-6 text-center shadow-xl border-2 border-slate-700">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-2xl mx-auto mb-3">
+                            <i class="fa-solid ${isReady ? 'fa-lock-open text-emerald-400' : 'fa-lock'}"></i>
+                        </div>
+                        <h3 class="font-game text-lg sm:text-xl font-bold mb-1">
+                            ${isReady ? '阅读时间达标！现在可以解锁 5 道理解题了' : '请仔细阅读上方短文，倒计时结束后即可解锁题目！'}
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-300 mb-5">
+                            Read the passage carefully. Questions unlock automatically when the timer reaches 0.
+                        </p>
+                        <button id="btn-unlock-reading" onclick="unlockReadingQuestions()" ${isReady ? '' : 'disabled'} class="btn-3d ${isReady ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-600'} text-white font-game text-base sm:text-lg font-bold px-7 py-3.5 rounded-2xl inline-flex items-center justify-center">
+                            ${isReady
+                                ? `<i class="fa-solid fa-lock-open mr-2"></i>我已仔细读完文章，解锁题目 (Unlock Questions)`
+                                : `<i class="fa-solid fa-hourglass-half mr-2"></i>请继续阅读 (<span id="reading-countdown" class="mx-1 font-mono text-amber-300">${state.s3.timerLeft}</span> 秒后解锁)`
+                            }
+                        </button>
+                    </div>
+                </div>
+                `;
+            }
+
+            // CASE B: UNLOCKED SPLIT-VIEW (Passage Reference + 5 Comprehension Questions)
+            const qIdx = state.s3.qIndex;
+            const currentQ = passage.questions[qIdx];
+
+            const qOptionsHtml = currentQ.options.map((opt, idx) => {
+                let style = "bg-white hover:bg-emerald-50 border-slate-200 text-slate-800";
+                let icon = "";
+                if (state.s3.answered) {
+                    if (idx === currentQ.ans) {
+                        style = "bg-emerald-50 border-emerald-500 text-emerald-950 ring-2 ring-emerald-200";
+                        icon = `<i class="fa-solid fa-circle-check text-emerald-600 text-lg"></i>`;
+                    } else if (idx === state.s3.selectedIdx) {
+                        style = "bg-rose-50 border-rose-500 text-rose-950 animate-shake";
+                        icon = `<i class="fa-solid fa-circle-xmark text-rose-600 text-lg"></i>`;
+                    } else {
+                        style = "bg-slate-50 border-slate-200 text-slate-400 opacity-60";
+                    }
+                }
+                return `
+                <button onclick="handleReadingSelect(${idx})" ${state.s3.answered ? 'disabled' : ''} class="w-full p-3.5 rounded-2xl border-2 text-left font-semibold text-sm sm:text-base transition flex items-center justify-between gap-2 ${style}">
+                    <span>${String.fromCharCode(65 + idx)}. ${opt}</span>
+                    ${icon}
+                </button>
+                `;
+            }).join('');
+
+            return `
+            <div class="animate-pop">
+                <!-- Header -->
+                <div class="bg-white rounded-2xl p-4 border-2 border-emerald-100 shadow-sm mb-5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <span class="text-xs font-bold text-emerald-600">第 ${state.s3.passageIdx + 1} / 2 篇理解文 • 作答中</span>
+                        <h2 class="font-game text-lg sm:text-xl font-bold text-slate-900">${passage.title}</h2>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl">
+                        本篇进度: 第 ${qIdx + 1} / 5 题
+                    </span>
+                </div>
+
+                <!-- Split View: Left Passage Reference, Right Question -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    <!-- Passage Reference Card -->
+                    <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border-2 border-emerald-100 shadow-sm">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                            <span class="font-bold text-xs uppercase tracking-wider text-emerald-700">
+                                <i class="fa-solid fa-book-open mr-1"></i> 原文对照 (Passage Reference)
+                            </span>
+                        </div>
+                        <div class="text-sm sm:text-base leading-relaxed text-slate-700">
+                            ${paragraphsHtml}
+                        </div>
+                    </div>
+
+                    <!-- Comprehension Question Card -->
+                    <div class="lg:col-span-6 bg-white rounded-3xl p-5 sm:p-6 border-2 border-indigo-100 shadow-md">
+                        <span class="inline-block bg-indigo-100 text-indigo-800 text-xs font-bold px-3 py-1 rounded-full mb-3">
+                            Question ${qIdx + 1} of 5
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-5 leading-snug">
+                            ${currentQ.q}
+                        </h3>
+
+                        <div class="space-y-3">
+                            ${qOptionsHtml}
+                        </div>
+
+                        ${state.s3.answered ? `
+                        <div class="mt-5 p-4 rounded-2xl ${state.s3.selectedIdx === currentQ.ans ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-amber-50 border border-amber-200 text-amber-950'} animate-pop">
+                            <p class="font-bold text-xs sm:text-sm mb-1">
+                                ${state.s3.selectedIdx === currentQ.ans ? '✅ 回答正确！' : '📖 原文解析：'}
+                            </p>
+                            <p class="text-xs sm:text-sm leading-relaxed">${currentQ.explain}</p>
+                        </div>
+
+                        <div class="mt-5 text-right">
+                            <button onclick="nextReadingQuestion()" class="btn-3d bg-emerald-600 hover:bg-emerald-700 text-white font-game text-base font-bold px-6 py-3 rounded-2xl inline-flex items-center gap-2">
+                                <span>${qIdx < 4 ? '下一题 (Next)' : (state.s3.passageIdx === 0 ? '进入第二篇理解文 (Passage 2)' : '查看最终成绩单 (Finish!)')}</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        /* ---------------- FINAL RESULTS & CERTIFICATE SCREEN ---------------- */
+        function renderResultsScreen() {
+            const totalCorrect = state.s1.scoreCount + state.s2.scoreCount + state.s3.scoreCount;
+            const totalItems = 70; // 30 vocab + 30 grammar + 10 reading
+            const accuracy = Math.round((totalCorrect / totalItems) * 100);
+
+            let rankTitle = "English Explorer 英文探索者";
+            let stars = "⭐⭐⭐";
+            if (accuracy >= 85) {
+                rankTitle = "Academy Stars Grand Master 六年级英文荣耀大师";
+                stars = "⭐⭐⭐⭐⭐";
+            } else if (accuracy >= 65) {
+                rankTitle = "Star Scholar 英文小达人";
+                stars = "⭐⭐⭐⭐";
+            }
+
+            const mistakesHtml = state.mistakes.length === 0
+                ? `<div class="bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-2xl text-sm font-bold text-center">🎉 太厉害了！没有任何错题记录，全部满分掌握！</div>`
+                : state.mistakes.map(m => `
+                    <div class="bg-rose-50/70 border border-rose-200 p-3.5 rounded-xl text-left">
+                        <span class="text-xs font-bold text-rose-700 block mb-0.5">${m.category}</span>
+                        <p class="text-xs sm:text-sm text-slate-800">${m.detail}</p>
+                    </div>
+                `).join('');
+
+            return `
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl border-2 border-indigo-100 p-6 sm:p-10 text-center animate-pop">
+                <div class="text-3xl sm:text-4xl mb-2">${stars}</div>
+                <span class="inline-block bg-amber-100 text-amber-800 text-xs font-bold px-3.5 py-1 rounded-full mb-2">
+                    挑战完成 • Total XP: ${state.xp}
+                </span>
+                <h2 class="font-game text-2xl sm:text-4xl font-bold text-slate-900 mb-2">${rankTitle}</h2>
+                <p class="text-slate-600 text-sm sm:text-base mb-7">
+                    恭喜你完成了 Academy Stars Year 6 全部三个复习关卡！以下是你的学习成绩报告：
+                </p>
+
+                <!-- Score Breakdown Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-indigo-50 border-2 border-indigo-100 p-4 rounded-2xl">
+                        <p class="text-xs font-bold text-indigo-600 mb-1">第一关：生字双步考</p>
+                        <p class="font-game text-2xl sm:text-3xl font-bold text-indigo-950">${state.s1.scoreCount} <span class="text-base font-normal text-slate-500">/ 30</span></p>
+                    </div>
+                    <div class="bg-purple-50 border-2 border-purple-100 p-4 rounded-2xl">
+                        <p class="text-xs font-bold text-purple-600 mb-1">第二关：语法大闯关</p>
+                        <p class="font-game text-2xl sm:text-3xl font-bold text-purple-950">${state.s2.scoreCount} <span class="text-base font-normal text-slate-500">/ 30</span></p>
+                    </div>
+                    <div class="bg-emerald-50 border-2 border-emerald-100 p-4 rounded-2xl">
+                        <p class="text-xs font-bold text-emerald-600 mb-1">第三关：阅读理解</p>
+                        <p class="font-game text-2xl sm:text-3xl font-bold text-emerald-950">${state.s3.scoreCount} <span class="text-base font-normal text-slate-500">/ 10</span></p>
+                    </div>
+                </div>
+
+                <!-- Mistake Review Notebook -->
+                <div class="text-left mb-8">
+                    <h3 class="font-game text-lg font-bold text-slate-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-list text-rose-500"></i>
+                        <span>错题复习本 (Review Notebook - ${state.mistakes.length} 项)</span>
+                    </h3>
+                    <div class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                        ${mistakesHtml}
+                    </div>
+                </div>
+
+                <button onclick="resetFullGame()" class="btn-3d bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-game text-lg font-bold px-8 py-4 rounded-2xl inline-flex items-center gap-2.5">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>重新挑战全部关卡 (Play Again)</span>
+                </button>
+            </div>
+            `;
+        }
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            render();
+        };
+    </script>
+</body>
+</html>
